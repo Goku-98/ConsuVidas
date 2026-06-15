@@ -7,27 +7,62 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root { --bg:#1a1a1a; --card:#2d2d2d; --player:#4a90e2; --creature:#e24a4a; }
+    * { box-sizing: border-box; }
     body { font-family: 'Segoe UI', sans-serif; background:var(--bg); color:#fff; padding:20px; margin:0; }
     h1,h2 { text-align:center; color:#f5a623; }
     .container { max-width:1200px; margin:0 auto; }
     .form-box { background:var(--card); padding:20px; border-radius:8px; margin-bottom:20px; }
     .form-group { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
-    input,select,button { padding:10px; border-radius:4px; border:1px solid #444; background:#333; color:#fff; font-size:16px; }
-    button { background:#f5a623; color:#000; font-weight:bold; cursor:pointer; }
+    input,select,button,textarea { padding:10px; border-radius:4px; border:1px solid #444; background:#333; color:#fff; font-size:15px; }
+    button { background:#f5a623; color:#000; font-weight:bold; cursor:pointer; border:none; }
     button:hover { filter:brightness(1.2); }
     .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px; }
     .col { background:#222; padding:15px; border-radius:8px; }
     .col.p { border-top:5px solid var(--player); }
     .col.c { border-top:5px solid var(--creature); }
     .card { background:var(--card); padding:15px; margin:15px 0; border-radius:8px; }
-    .card-top { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #444; padding-bottom:8px; }
+    .card-top { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #444; padding-bottom:8px; margin-bottom:10px; }
     .vida { font-size:20px; font-weight:bold; color:#2ecc71; }
     .vida.low { color:#e74c3c; }
     .ctrl { display:flex; gap:8px; margin-top:10px; }
     .inp { width:70px; text-align:center; }
-    .dmg { background:var(--creature); color:#fff; flex:1; }
-    .heal { background:#2ecc71; color:#fff; flex:1; }
+    .btn-dmg { background:#e24a4a; color:#fff; flex:1; }
+    .btn-heal { background:#2ecc71; color:#fff; flex:1; }
+    .btn-edit { background:#555; color:#fff; padding:6px 10px; font-size:13px; }
+    .btn-del { background:none; border:none; cursor:pointer; color:#888; font-size:18px; padding:0 4px; }
+    .btn-del:hover { color:#e74c3c; }
     #status { text-align:center; font-size:12px; color:#aaa; margin-bottom:10px; }
+    .tabs { display:flex; gap:8px; margin-bottom:20px; justify-content:center; }
+    .tab { padding:10px 24px; border-radius:4px; cursor:pointer; background:#333; color:#aaa; border:none; font-size:15px; }
+    .tab.active { background:#f5a623; color:#000; font-weight:bold; }
+    .section { display:none; }
+    .section.active { display:block; }
+
+    /* Plantilla cards */
+    .plantilla-card { background:#2a2a2a; border:1px solid #444; border-radius:8px; padding:12px 15px; margin:10px 0; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+    .plantilla-info { flex:1; }
+    .plantilla-info strong { font-size:16px; }
+    .plantilla-info span { font-size:13px; color:#aaa; margin-left:8px; }
+    .plantilla-btns { display:flex; gap:8px; }
+    .badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:10px; font-weight:bold; margin-left:6px; }
+    .badge.j { background:#1a3a5c; color:#4a90e2; }
+    .badge.c { background:#3a1a1a; color:#e24a4a; }
+
+    /* Modal edición */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:999; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:#2d2d2d; border-radius:10px; padding:30px; width:360px; max-width:95vw; }
+    .modal h3 { margin:0 0 20px; color:#f5a623; text-align:center; }
+    .modal label { display:block; font-size:13px; color:#aaa; margin-bottom:4px; margin-top:12px; }
+    .modal input, .modal select { width:100%; }
+    .modal-btns { display:flex; gap:10px; margin-top:20px; }
+    .modal-btns button { flex:1; padding:12px; }
+    .btn-cancel { background:#555; color:#fff; }
+
+    /* vida bar */
+    .vida-bar-wrap { background:#444; border-radius:4px; height:6px; margin:6px 0; overflow:hidden; }
+    .vida-bar { height:6px; border-radius:4px; transition:width 0.3s; background:#2ecc71; }
+    .vida-bar.low { background:#e74c3c; }
   </style>
 </head>
 <body>
@@ -35,33 +70,111 @@
   <h1>⚔️ GESTOR RPG ⚔️</h1>
   <p id="status">Conectando...</p>
 
-  <div class="form-box">
-    <h2>Añadir al plantel</h2>
-    <div class="form-group">
-      <input id="nombre" placeholder="Nombre">
-      <input id="vmax" type="number" placeholder="Vida máxima" min="1">
-      <select id="tipo">
-        <option value="jugador">Jugador</option>
-        <option value="criatura">Criatura</option>
-      </select>
-      <button onclick="añadir()">Añadir</button>
+  <div class="tabs">
+    <button class="tab active" onclick="setTab('combate')">⚔️ Combate</button>
+    <button class="tab" onclick="setTab('plantillas')">📋 Plantillas</button>
+  </div>
+
+  <!-- ===== PESTAÑA COMBATE ===== -->
+  <div id="tab-combate" class="section active">
+    <div class="form-box">
+      <h2>Añadir al combate</h2>
+      <div class="form-group">
+        <input id="nombre" placeholder="Nombre">
+        <input id="vmax" type="number" placeholder="Vida máxima" min="1">
+        <select id="tipo">
+          <option value="jugador">Jugador</option>
+          <option value="criatura">Criatura</option>
+        </select>
+        <button onclick="añadir()">Añadir</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="col p"><h2>🛡️ JUGADORES</h2><div id="jugadores"></div></div>
+      <div class="col c"><h2>👹 CRIATURAS</h2><div id="criaturas"></div></div>
     </div>
   </div>
 
-  <div class="grid">
-    <div class="col p"><h2>🛡️ JUGADORES</h2><div id="jugadores"></div></div>
-    <div class="col c"><h2>👹 CRIATURAS</h2><div id="criaturas"></div></div>
+  <!-- ===== PESTAÑA PLANTILLAS ===== -->
+  <div id="tab-plantillas" class="section">
+    <div class="form-box">
+      <h2>Nueva plantilla</h2>
+      <div class="form-group">
+        <input id="p-nombre" placeholder="Nombre">
+        <input id="p-vmax" type="number" placeholder="Vida máxima" min="1">
+        <select id="p-tipo">
+          <option value="jugador">Jugador</option>
+          <option value="criatura">Criatura</option>
+        </select>
+        <button onclick="crearPlantilla()">Guardar</button>
+      </div>
+    </div>
+    <div id="lista-plantillas"></div>
+  </div>
+</div>
+
+<!-- MODAL EDICIÓN COMBATE -->
+<div class="modal-overlay" id="modal-combate">
+  <div class="modal">
+    <h3>Editar en combate</h3>
+    <label>Nombre</label>
+    <input id="edit-nombre" type="text">
+    <label>Vida máxima</label>
+    <input id="edit-vmax" type="number" min="1">
+    <label>Vida actual</label>
+    <input id="edit-vactual" type="number" min="0">
+    <label>Tipo</label>
+    <select id="edit-tipo">
+      <option value="jugador">Jugador</option>
+      <option value="criatura">Criatura</option>
+    </select>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="cerrarModal('modal-combate')">Cancelar</button>
+      <button onclick="guardarEdicionCombate()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDICIÓN PLANTILLA -->
+<div class="modal-overlay" id="modal-plantilla">
+  <div class="modal">
+    <h3>Editar plantilla</h3>
+    <label>Nombre</label>
+    <input id="pedit-nombre" type="text">
+    <label>Vida máxima</label>
+    <input id="pedit-vmax" type="number" min="1">
+    <label>Tipo</label>
+    <select id="pedit-tipo">
+      <option value="jugador">Jugador</option>
+      <option value="criatura">Criatura</option>
+    </select>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="cerrarModal('modal-plantilla')">Cancelar</button>
+      <button onclick="guardarEdicionPlantilla()">Guardar</button>
+    </div>
   </div>
 </div>
 
 <script>
-// ⚠️ CAMBIA ESTAS DOS LÍNEAS con tus datos de Supabase (Settings → API)
 const SUPABASE_URL = 'https://badpngarzeykctxehnkh.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhZHBuZ2FyemV5a2N0eGVobmtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NzcxMDEsImV4cCI6MjA5NzA1MzEwMX0.CTLFLH0UOQe63d2qBvJCS5fxUjYYZXawmNvjCdoVRpA';
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let estado = {};
+let plantillas = {};
+let editandoId = null;
 
+// =================== TABS ===================
+function setTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+  if (tab === 'plantillas') cargarPlantillas();
+}
+
+// =================== COMBATE ===================
 async function cargar() {
   const { data, error } = await sb.from('combate').select('*').order('id');
   if (error) { document.getElementById('status').textContent = '🔴 Error de conexión'; return; }
@@ -74,22 +187,27 @@ async function cargar() {
 function renderizar() {
   ['jugadores','criaturas'].forEach(id => document.getElementById(id).innerHTML = '');
   Object.values(estado).forEach(e => {
+    const pct = Math.round((e.vida_actual / e.vida_max) * 100);
     const low = e.vida_actual <= e.vida_max * 0.25 ? 'low' : '';
     const div = document.createElement('div');
     div.className = 'card';
     div.innerHTML = `
       <div class="card-top">
         <strong>${e.nombre}</strong>
-        <button onclick="eliminar(${e.id})" style="background:none;border:none;cursor:pointer;color:#fff;font-size:18px">❌</button>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn-edit" onclick="abrirEditCombate(${e.id})">✏️ Editar</button>
+          <button class="btn-del" onclick="eliminar(${e.id})">❌</button>
+        </div>
       </div>
-      <div style="display:flex;justify-content:space-between;margin:10px 0">
-        <span>Máx: <strong>${e.vida_max}</strong></span>
+      <div style="display:flex;justify-content:space-between;margin:4px 0">
+        <span style="color:#aaa;font-size:13px">Máx: <strong style="color:#fff">${e.vida_max}</strong></span>
         <span>Actual: <span class="vida ${low}">${e.vida_actual}</span></span>
       </div>
+      <div class="vida-bar-wrap"><div class="vida-bar ${low}" style="width:${pct}%"></div></div>
       <div class="ctrl">
-        <input type="number" id="m${e.id}" class="inp" value="0" min="1">
-        <button class="dmg" onclick="modVida(${e.id},-1)">💥 Daño</button>
-        <button class="heal" onclick="modVida(${e.id},1)">❤️ Curar</button>
+        <input type="number" id="m${e.id}" class="inp" placeholder="Cant.">
+        <button class="btn-dmg" onclick="modVida(${e.id},-1)">💥 Daño</button>
+        <button class="btn-heal" onclick="modVida(${e.id},1)">❤️ Curar</button>
       </div>
     `;
     document.getElementById(e.tipo === 'jugador' ? 'jugadores' : 'criaturas').appendChild(div);
@@ -107,8 +225,9 @@ async function añadir() {
 }
 
 async function modVida(id, signo) {
-  const cant = parseInt(document.getElementById('m' + id).value);
-  if (!cant || cant <= 0) return;
+  const input = document.getElementById('m' + id);
+  const cant = parseInt(input.value);
+  if (!cant || cant <= 0) { input.focus(); return; }
   const e = estado[id];
   let nv = signo === -1
     ? Math.max(0, e.vida_actual - cant)
@@ -121,8 +240,131 @@ async function eliminar(id) {
     await sb.from('combate').delete().eq('id', id);
 }
 
-// Realtime: cualquier cambio en la tabla se refleja en todos los dispositivos al instante
-sb.channel('combate')
+function abrirEditCombate(id) {
+  editandoId = id;
+  const e = estado[id];
+  document.getElementById('edit-nombre').value = e.nombre;
+  document.getElementById('edit-vmax').value = e.vida_max;
+  document.getElementById('edit-vactual').value = e.vida_actual;
+  document.getElementById('edit-tipo').value = e.tipo;
+  document.getElementById('modal-combate').classList.add('open');
+}
+
+async function guardarEdicionCombate() {
+  const nombre = document.getElementById('edit-nombre').value.trim();
+  const vida_max = parseInt(document.getElementById('edit-vmax').value);
+  const vida_actual = Math.min(parseInt(document.getElementById('edit-vactual').value), vida_max);
+  const tipo = document.getElementById('edit-tipo').value;
+  if (!nombre || !vida_max) return;
+  await sb.from('combate').update({ nombre, vida_max, vida_actual, tipo }).eq('id', editandoId);
+  cerrarModal('modal-combate');
+}
+
+// =================== PLANTILLAS ===================
+async function cargarPlantillas() {
+  const { data, error } = await sb.from('plantillas').select('*').order('tipo').order('nombre');
+  if (error) { console.error(error); return; }
+  plantillas = {};
+  data.forEach(p => plantillas[p.id] = p);
+  renderizarPlantillas();
+}
+
+function renderizarPlantillas() {
+  const lista = document.getElementById('lista-plantillas');
+  const items = Object.values(plantillas);
+  if (items.length === 0) {
+    lista.innerHTML = '<p style="text-align:center;color:#666;margin-top:20px">No hay plantillas todavía. Crea una arriba.</p>';
+    return;
+  }
+  const jugadores = items.filter(p => p.tipo === 'jugador');
+  const criaturas = items.filter(p => p.tipo === 'criatura');
+
+  let html = '';
+  if (jugadores.length) {
+    html += '<h2>🛡️ Jugadores</h2>';
+    jugadores.forEach(p => html += plantillaCard(p));
+  }
+  if (criaturas.length) {
+    html += '<h2>👹 Criaturas</h2>';
+    criaturas.forEach(p => html += plantillaCard(p));
+  }
+  lista.innerHTML = html;
+}
+
+function plantillaCard(p) {
+  return `
+    <div class="plantilla-card">
+      <div class="plantilla-info">
+        <strong>${p.nombre}</strong>
+        <span class="badge ${p.tipo === 'jugador' ? 'j' : 'c'}">${p.tipo}</span>
+        <span>❤️ ${p.vida_max} PV</span>
+      </div>
+      <div class="plantilla-btns">
+        <button style="background:#4a90e2;color:#fff;padding:7px 12px;font-size:13px" onclick="añadirDesdePlantilla(${p.id})">➕ Al combate</button>
+        <button class="btn-edit" onclick="abrirEditPlantilla(${p.id})">✏️</button>
+        <button class="btn-del" onclick="eliminarPlantilla(${p.id})">❌</button>
+      </div>
+    </div>
+  `;
+}
+
+async function crearPlantilla() {
+  const nombre = document.getElementById('p-nombre').value.trim();
+  const vida_max = parseInt(document.getElementById('p-vmax').value);
+  const tipo = document.getElementById('p-tipo').value;
+  if (!nombre || !vida_max) return;
+  await sb.from('plantillas').insert({ nombre, tipo, vida_max });
+  document.getElementById('p-nombre').value = '';
+  document.getElementById('p-vmax').value = '';
+  cargarPlantillas();
+}
+
+async function añadirDesdePlantilla(id) {
+  const p = plantillas[id];
+  await sb.from('combate').insert({ nombre: p.nombre, tipo: p.tipo, vida_max: p.vida_max, vida_actual: p.vida_max });
+  setTab('combate');
+  document.querySelectorAll('.tab')[0].classList.add('active');
+  document.querySelectorAll('.tab')[1].classList.remove('active');
+}
+
+function abrirEditPlantilla(id) {
+  editandoId = id;
+  const p = plantillas[id];
+  document.getElementById('pedit-nombre').value = p.nombre;
+  document.getElementById('pedit-vmax').value = p.vida_max;
+  document.getElementById('pedit-tipo').value = p.tipo;
+  document.getElementById('modal-plantilla').classList.add('open');
+}
+
+async function guardarEdicionPlantilla() {
+  const nombre = document.getElementById('pedit-nombre').value.trim();
+  const vida_max = parseInt(document.getElementById('pedit-vmax').value);
+  const tipo = document.getElementById('pedit-tipo').value;
+  if (!nombre || !vida_max) return;
+  await sb.from('plantillas').update({ nombre, vida_max, tipo }).eq('id', editandoId);
+  cerrarModal('modal-plantilla');
+  cargarPlantillas();
+}
+
+async function eliminarPlantilla(id) {
+  if (confirm('¿Eliminar plantilla?')) {
+    await sb.from('plantillas').delete().eq('id', id);
+    cargarPlantillas();
+  }
+}
+
+// =================== UTILS ===================
+function cerrarModal(id) {
+  document.getElementById(id).classList.remove('open');
+  editandoId = null;
+}
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// =================== REALTIME ===================
+sb.channel('combate-changes')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'combate' }, cargar)
   .subscribe();
 
