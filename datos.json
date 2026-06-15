@@ -3,7 +3,7 @@
     "id": 1781490198562,
     "nombre": "Escavus",
     "vida_max": 120,
-    "vida_actual": 120,
+    "vida_actual": 100,
     "tipo": "jugador"
   }
 ]
