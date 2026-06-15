@@ -57,7 +57,7 @@
 <script>
 // ⚠️ CAMBIA ESTAS DOS LÍNEAS con tus datos de Supabase (Settings → API)
 const SUPABASE_URL = 'https://badpngarzeykctxehnkh.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_XC-ECE0hcVrbopOxhIvhPg_l_iA1Opc';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhZHBuZ2FyemV5a2N0eGVobmtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NzcxMDEsImV4cCI6MjA5NzA1MzEwMX0.CTLFLH0UOQe63d2qBvJCS5fxUjYYZXawmNvjCdoVRpA';
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let estado = {};
@@ -88,7 +88,7 @@ function renderizar() {
       </div>
       <div class="ctrl">
         <input type="number" id="m${e.id}" class="inp" value="0" min="1">
-        <button class="dmg" onclick="modVida(${e.id},-1)">🔥 Daño</button>
+        <button class="dmg" onclick="modVida(${e.id},-1)">💥 Daño</button>
         <button class="heal" onclick="modVida(${e.id},1)">❤️ Curar</button>
       </div>
     `;
