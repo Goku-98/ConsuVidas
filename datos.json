@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "id": 1781490538104,
+    "nombre": "Verde",
+    "vida_max": 100,
+    "vida_actual": 100,
+    "tipo": "jugador"
+  }
+]
