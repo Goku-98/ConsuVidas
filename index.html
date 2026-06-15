@@ -1,241 +1,132 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor de Combate - GitHub DB</title>
-    <style>
-        :root {
-            --bg-color: #1a1a1a;
-            --card-bg: #2d2d2d;
-            --text-color: #ffffff;
-            --player-color: #4a90e2;
-            --creature-color: #e24a4a;
-            --border-radius: 8px;
-        }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: var(--text-color); padding: 20px; margin:0; }
-        h1, h2 { text-align: center; color: #f5a623; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .config-form, .registro-form { background-color: var(--card-bg); padding: 20px; border-radius: var(--border-radius); margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .form-group { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-        input, select, button { padding: 10px; border-radius: 4px; border: 1px solid #444; background-color: #333; color: white; font-size: 16px; }
-        button { background-color: #f5a623; color: black; font-weight: bold; cursor: pointer; }
-        button:hover { filter: brightness(1.2); }
-        .grid-secciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .seccion { background-color: #222; padding: 15px; border-radius: var(--border-radius); border-top: 5px solid transparent; }
-        .seccion.jugadores { border-top-color: var(--player-color); }
-        .seccion.criaturas { border-top-color: var(--creature-color); }
-        .card { background-color: var(--card-bg); padding: 15px; margin: 15px 0; border-radius: var(--border-radius); }
-        .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 8px; }
-        .card-title { font-size: 18px; font-weight: bold; }
-        .vidad-info { display: flex; justify-content: space-between; margin: 10px 0; }
-        .vida-actual { font-size: 20px; font-weight: bold; color: #2ecc71; }
-        .vida-actual.critica { color: #e74c3c; }
-        .dmg-control { display: flex; gap: 8px; }
-        .input-dmg { width: 70px; text-align: center; }
-        .btn-dmg { background-color: var(--creature-color); color: white; flex: 1; }
-        .btn-heal { background-color: #2ecc71; color: white; flex: 1; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestor RPG</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root { --bg:#1a1a1a; --card:#2d2d2d; --player:#4a90e2; --creature:#e24a4a; }
+    body { font-family: 'Segoe UI', sans-serif; background:var(--bg); color:#fff; padding:20px; margin:0; }
+    h1,h2 { text-align:center; color:#f5a623; }
+    .container { max-width:1200px; margin:0 auto; }
+    .form-box { background:var(--card); padding:20px; border-radius:8px; margin-bottom:20px; }
+    .form-group { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+    input,select,button { padding:10px; border-radius:4px; border:1px solid #444; background:#333; color:#fff; font-size:16px; }
+    button { background:#f5a623; color:#000; font-weight:bold; cursor:pointer; }
+    button:hover { filter:brightness(1.2); }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px; }
+    .col { background:#222; padding:15px; border-radius:8px; }
+    .col.p { border-top:5px solid var(--player); }
+    .col.c { border-top:5px solid var(--creature); }
+    .card { background:var(--card); padding:15px; margin:15px 0; border-radius:8px; }
+    .card-top { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #444; padding-bottom:8px; }
+    .vida { font-size:20px; font-weight:bold; color:#2ecc71; }
+    .vida.low { color:#e74c3c; }
+    .ctrl { display:flex; gap:8px; margin-top:10px; }
+    .inp { width:70px; text-align:center; }
+    .dmg { background:var(--creature); color:#fff; flex:1; }
+    .heal { background:#2ecc71; color:#fff; flex:1; }
+    #status { text-align:center; font-size:12px; color:#aaa; margin-bottom:10px; }
+  </style>
 </head>
 <body>
+<div class="container">
+  <h1>⚔️ GESTOR RPG ⚔️</h1>
+  <p id="status">Conectando...</p>
 
-    <div class="container">
-        <h1>⚔️ GESTOR RPG (GITHUB DB) ⚔️</h1>
-
-        <div class="config-form">
-            <h2>🔑 Configurar Acceso a GitHub</h2>
-            <p style="font-size:12px; color:#aaa; text-align:center;">Introduce tus datos. Se guardarán de forma segura solo en el navegador de este dispositivo.</p>
-            <div class="form-group">
-                <input type="text" id="gh-user" placeholder="Usuario de GitHub">
-                <input type="text" id="gh-repo" placeholder="Nombre del Repositorio">
-                <input type="password" id="gh-token" placeholder="GitHub Fine-Grained Token">
-                <button onclick="guardarConfig()">Conectar</button>
-            </div>
-        </div>
-
-        <div class="registro-form">
-            <h2>Añadir al Plantel</h2>
-            <form id="form-crear">
-                <div class="form-group">
-                    <input type="text" id="nombre" placeholder="Nombre" required>
-                    <input type="number" id="vida_max" placeholder="Vida Máxima" min="1" required>
-                    <select id="tipo">
-                        <option value="jugador">Jugador</option>
-                        <option value="criatura">Criatura</option>
-                    </select>
-                    <button type="submit">Añadir</button>
-                </div>
-            </form>
-        </div>
-
-        <div class="grid-secciones">
-            <div class="seccion jugadores">
-                <h2>🛡️ JUGADORES</h2>
-                <div id="lista-jugadores"></div>
-            </div>
-            <div class="seccion criaturas">
-                <h2>👹 CRIATURAS</h2>
-                <div id="lista-criaturas"></div>
-            </div>
-        </div>
+  <div class="form-box">
+    <h2>Añadir al plantel</h2>
+    <div class="form-group">
+      <input id="nombre" placeholder="Nombre">
+      <input id="vmax" type="number" placeholder="Vida máxima" min="1">
+      <select id="tipo">
+        <option value="jugador">Jugador</option>
+        <option value="criatura">Criatura</option>
+      </select>
+      <button onclick="añadir()">Añadir</button>
     </div>
+  </div>
 
-    <script>
-        let infoCombate = [];
-        let fileSHA = ""; // Requerido por GitHub para actualizar archivos
+  <div class="grid">
+    <div class="col p"><h2>🛡️ JUGADORES</h2><div id="jugadores"></div></div>
+    <div class="col c"><h2>👹 CRIATURAS</h2><div id="criaturas"></div></div>
+  </div>
+</div>
 
-        // Cargar configuración guardada del dispositivo
-        document.getElementById('gh-user').value = localStorage.getItem('gh_user') || '';
-        document.getElementById('gh-repo').value = localStorage.getItem('gh_repo') || '';
-        document.getElementById('gh-token').value = localStorage.getItem('gh_token') || '';
+<script>
+// ⚠️ CAMBIA ESTAS DOS LÍNEAS con tus datos de Supabase (Settings → API)
+const SUPABASE_URL = 'https://badpngarzeykctxehnkh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_XC-ECE0hcVrbopOxhIvhPg_l_iA1Opc';
 
-        function guardarConfig() {
-            localStorage.setItem('gh_user', document.getElementById('gh-user').value);
-            localStorage.setItem('gh_repo', document.getElementById('gh-repo').value);
-            localStorage.setItem('gh_token', document.getElementById('gh-token').value);
-            alert("Configuración guardada en este dispositivo.");
-            document.querySelector('.config-form').style.display = 'none';
-            cargarDatos();
-        }
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let estado = {};
 
-        function getHeaders() {
-            const token = localStorage.getItem('gh_token');
-            return {
-                "Authorization": `token ${token}`,
-                "Accept": "application/vnd.github.v3+json",
-                "Content-Type": "application/json"
-            };
-        }
+async function cargar() {
+  const { data, error } = await sb.from('combate').select('*').order('id');
+  if (error) { document.getElementById('status').textContent = '🔴 Error de conexión'; return; }
+  estado = {};
+  data.forEach(e => estado[e.id] = e);
+  renderizar();
+  document.getElementById('status').textContent = '🟢 Conectado en tiempo real';
+}
 
-        function getURL() {
-            const user = localStorage.getItem('gh_user');
-            const repo = localStorage.getItem('gh_repo');
-            return `https://api.github.com/repos/${user}/${repo}/contents/datos.json`;
-        }
+function renderizar() {
+  ['jugadores','criaturas'].forEach(id => document.getElementById(id).innerHTML = '');
+  Object.values(estado).forEach(e => {
+    const low = e.vida_actual <= e.vida_max * 0.25 ? 'low' : '';
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.innerHTML = `
+      <div class="card-top">
+        <strong>${e.nombre}</strong>
+        <button onclick="eliminar(${e.id})" style="background:none;border:none;cursor:pointer;color:#fff;font-size:18px">❌</button>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin:10px 0">
+        <span>Máx: <strong>${e.vida_max}</strong></span>
+        <span>Actual: <span class="vida ${low}">${e.vida_actual}</span></span>
+      </div>
+      <div class="ctrl">
+        <input type="number" id="m${e.id}" class="inp" value="0" min="1">
+        <button class="dmg" onclick="modVida(${e.id},-1)">💥 Daño</button>
+        <button class="heal" onclick="modVida(${e.id},1)">❤️ Curar</button>
+      </div>
+    `;
+    document.getElementById(e.tipo === 'jugador' ? 'jugadores' : 'criaturas').appendChild(div);
+  });
+}
 
-        // LEER BASE DE DATOS DESDE GITHUB
-        async function cargarDatos() {
-            const url = getURL();
-            if (!localStorage.getItem('gh_token')) return;
+async function añadir() {
+  const nombre = document.getElementById('nombre').value.trim();
+  const vmax = parseInt(document.getElementById('vmax').value);
+  const tipo = document.getElementById('tipo').value;
+  if (!nombre || !vmax) return;
+  await sb.from('combate').insert({ nombre, tipo, vida_max: vmax, vida_actual: vmax });
+  document.getElementById('nombre').value = '';
+  document.getElementById('vmax').value = '';
+}
 
-            document.querySelector('.config-form').style.display = 'none';
+async function modVida(id, signo) {
+  const cant = parseInt(document.getElementById('m' + id).value);
+  if (!cant || cant <= 0) return;
+  const e = estado[id];
+  let nv = signo === -1
+    ? Math.max(0, e.vida_actual - cant)
+    : Math.min(e.vida_max, e.vida_actual + cant);
+  await sb.from('combate').update({ vida_actual: nv }).eq('id', id);
+}
 
-            try {
-                const res = await fetch(url, { headers: getHeaders(), cache: "no-store" });
-                if (res.status === 404) {
-                    // Si el archivo no existe, lo inicializamos vacío
-                    infoCombate = [];
-                    return;
-                }
-                const json = await res.json();
-                fileSHA = json.sha; // Guardamos el identificador de versión del archivo
-                // Decodificar el contenido que viene en Base64 desde GitHub
-                infoCombate = JSON.parse(atob(json.content));
-                renderizarTablas();
-            } catch (err) {
-                console.error("Error al cargar:", err);
-            }
-        }
+async function eliminar(id) {
+  if (confirm('¿Eliminar del combate?'))
+    await sb.from('combate').delete().eq('id', id);
+}
 
-        // GUARDAR BASE DE DATOS EN GITHUB
-        async function actualizarGitHub() {
-            const url = getURL();
-            const contenidoBase64 = btoa(JSON.stringify(infoCombate, null, 2));
-            
-            const body = {
-                message: "Actualización de vidas (Gestor Rol)",
-                content: contenidoBase64,
-                sha: fileSHA // GitHub exige el SHA anterior para dejarte sobreescribir
-            };
+// Realtime: cualquier cambio en la tabla se refleja en todos los dispositivos al instante
+sb.channel('combate')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'combate' }, cargar)
+  .subscribe();
 
-            const res = await fetch(url, {
-                method: "PUT",
-                headers: getHeaders(),
-                body: JSON.stringify(body)
-            });
-
-            if (res.ok) {
-                const json = await res.json();
-                fileSHA = json.content.sha; // Actualizamos el SHA con la nueva versión
-                renderizarTablas();
-            } else {
-                alert("Error al sincronizar con GitHub. Revisa tus credenciales.");
-            }
-        }
-
-        // Crear personaje e insertar en nuestro array
-        document.getElementById('form-crear').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const nuevo = {
-                id: Date.now(),
-                nombre: document.getElementById('nombre').value,
-                vida_max: parseInt(document.getElementById('vida_max').value),
-                vida_actual: parseInt(document.getElementById('vida_max').value),
-                tipo: document.getElementById('tipo').value
-            };
-            infoCombate.push(nuevo);
-            document.getElementById('form-crear').reset();
-            await actualizarGitHub();
-        });
-
-        function renderizarTablas() {
-            const listaJ = document.getElementById('lista-jugadores');
-            const listaC = document.getElementById('lista-criaturas');
-            listaJ.innerHTML = ''; listaC.innerHTML = '';
-
-            infoCombate.forEach(entidad => {
-                const div = document.createElement('div');
-                div.className = 'card';
-                const esCritico = entidad.vida_actual <= (entidad.vida_max * 0.25) ? 'critica' : '';
-                
-                div.innerHTML = `
-                    <div class="card-header">
-                        <span class="card-title">${entidad.nombre}</span>
-                        <button onclick="eliminarEntidad(${entidad.id})" style="background:none; border:none; cursor:pointer;">❌</button>
-                    </div>
-                    <div class="vidad-info">
-                        <span>Max: <strong>${entidad.vida_max}</strong></span>
-                        <span>Actual: <span class="vida-actual ${esCritico}">${entidad.vida_actual}</span></span>
-                    </div>
-                    <div class="dmg-control">
-                        <input type="number" id="mod-${entidad.id}" class="input-dmg" value="0" min="1">
-                        <button class="btn-dmg" onclick="modificarVida(${entidad.id}, 'daño')">💥 Daño</button>
-                        <button class="btn-heal" onclick="modificarVida(${entidad.id}, 'cura')">❤️ Curar</button>
-                    </div>
-                `;
-                if (entidad.tipo === 'jugador') listaJ.appendChild(div);
-                else listaC.appendChild(div);
-            });
-        }
-
-        async function modificarVida(id, operacion) {
-            const cantidad = parseInt(document.getElementById(`mod-${id}`).value);
-            if (isNaN(cantidad) || cantidad <= 0) return;
-
-            infoCombate = infoCombate.map(entidad => {
-                if (entidad.id === id) {
-                    let nv = entidad.vida_actual;
-                    if (operacion === 'daño') nv = Math.max(0, nv - cantidad);
-                    if (operacion === 'cura') nv = Math.min(entidad.vida_max, nv + cantidad);
-                    return { ...entidad, vida_actual: nv };
-                }
-                return entidad;
-            });
-            await actualizarGitHub();
-        }
-
-        async function eliminarEntidad(id) {
-            if (confirm("¿Eliminar del combate?")) {
-                infoCombate = infoCombate.filter(e => e.id !== id);
-                await actualizarGitHub();
-            }
-        }
-
-        // Auto-actualizar cada 5 segundos para simular "tiempo real" entre dispositivos
-        setInterval(cargarDatos, 5000);
-        
-        // Carga inicial
-        window.onload = cargarDatos;
-    </script>
+cargar();
+</script>
 </body>
 </html>
