@@ -94,6 +94,7 @@
             localStorage.setItem('gh_repo', document.getElementById('gh-repo').value);
             localStorage.setItem('gh_token', document.getElementById('gh-token').value);
             alert("Configuración guardada en este dispositivo.");
+            document.querySelector('.config-form').style.display = 'none';
             cargarDatos();
         }
 
@@ -116,6 +117,8 @@
         async function cargarDatos() {
             const url = getURL();
             if (!localStorage.getItem('gh_token')) return;
+
+            document.querySelector('.config-form').style.display = 'none';
 
             try {
                 const res = await fetch(url, { headers: getHeaders(), cache: "no-store" });
