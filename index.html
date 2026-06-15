@@ -71,8 +71,8 @@
   <p id="status">Conectando...</p>
 
   <div class="tabs">
-    <button class="tab active" onclick="setTab('combate')">⚔️ Combate</button>
-    <button class="tab" onclick="setTab('plantillas')">📋 Plantillas</button>
+    <button class="tab active" onclick="setTab('combate', this)">⚔️ Combate</button>
+    <button class="tab" onclick="setTab('plantillas', this)">📋 Plantillas</button>
   </div>
 
   <!-- ===== PESTAÑA COMBATE ===== -->
@@ -166,11 +166,11 @@ let plantillas = {};
 let editandoId = null;
 
 // =================== TABS ===================
-function setTab(tab) {
+function setTab(tab, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
-  event.target.classList.add('active');
+  el.classList.add('active');
   if (tab === 'plantillas') cargarPlantillas();
 }
 
@@ -322,9 +322,8 @@ async function crearPlantilla() {
 async function añadirDesdePlantilla(id) {
   const p = plantillas[id];
   await sb.from('combate').insert({ nombre: p.nombre, tipo: p.tipo, vida_max: p.vida_max, vida_actual: p.vida_max });
-  setTab('combate');
-  document.querySelectorAll('.tab')[0].classList.add('active');
-  document.querySelectorAll('.tab')[1].classList.remove('active');
+  const tabs = document.querySelectorAll('.tab');
+  setTab('combate', tabs[0]);
 }
 
 function abrirEditPlantilla(id) {
