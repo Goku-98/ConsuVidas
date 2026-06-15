@@ -1,12 +1,5 @@
 [
   {
-    "id": 1781490380056,
-    "nombre": "Zombie",
-    "vida_max": 120,
-    "vida_actual": 120,
-    "tipo": "criatura"
-  },
-  {
     "id": 1781490389353,
     "nombre": "Zombie",
     "vida_max": 120,
