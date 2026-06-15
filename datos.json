@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "id": 1781492389646,
+    "nombre": "Escavus",
+    "vida_max": 500,
+    "vida_actual": 500,
+    "tipo": "criatura"
+  }
+]
